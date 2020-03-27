@@ -6,7 +6,6 @@ MAINTAINER vincent
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-ENV  GLIBC_VERSION=2.23-r4 
 
 
 # update aliyun repositories
@@ -20,27 +19,20 @@ RUN apk --update add curl bash tzdata && \
     echo "Asia/Shanghai" > /etc/timezone && \
     apk del tzdata  
 
-COPY glibc-2.29-r0.apk /usr/local/
-COPY glibc-bin-2.29-r0.apk /usr/local/
-COPY glibc-i18n-2.29-r0.apk /usr/local/
+ENV JAVA_DIR /usr/java
+ENV JAVA_NAME jdk1.8.0_241
+ENV JAVA_HOME ${JAVA_DIR}/${JAVA_NAME}
+ENV JAVA_FILE server-jre-8u241-linux-x64.tar.gz
+ENV PATH ${PATH}:${JAVA_HOME}/bin
+ENV GLIBC_FILE glibc-2.31-r0.apk
 
-#JRE 8 安装
-ADD jre-8u241-linux-x64.tar.gz /usr/local/
+RUN apk --no-cache add bash ca-certificates wget && \
+wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+wget https://obs.cn-south-1.myhuaweicloud.com/report/${GLIBC_FILE} && \
+apk add ${GLIBC_FILE} && \
+rm -rf *.apk && \
+rm -rf /var/cache/apk/* && \
+wget https://obs.cn-south-1.myhuaweicloud.com/report/${JAVA_FILE} && \
+tar xvf ${JAVA_FILE} && mkdir ${JAVA_DIR} && mv ${JAVA_NAME} ${JAVA_DIR}/. && rm -f ${JAVA_FILE}
 
-RUN set -ex \
-    && cd /usr/local/ \
-    && apk --no-cache add ca-certificates wget \
-    && wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
-    && apk add glibc-2.29-r0.apk glibc-bin-2.29-r0.apk glibc-i18n-2.29-r0.apk \
-    && rm -rf /var/cache/apk/* glibc-2.29-r0.apk glibc-bin-2.29-r0.apk glibc-i18n-2.29-r0.apk
-
-# SET 
-ENV JAVA_HOME /usr/local/jre1.8.0_241
-ENV CLASSPATH $JAVA_HOME/bin
-ENV PATH .:$JAVA_HOME/bin:$PATH
-
-# run container with base path:/
-WORKDIR /
-
-# Should we only provide an entry point to Java?
-CMD ["/bin/sh"]
+CMD ["/bin/bash"]
